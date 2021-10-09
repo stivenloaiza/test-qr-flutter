@@ -1,6 +1,10 @@
+import 'dart:convert';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:qrzafiro/login_view.dart';
 import 'package:qrzafiro/qr_view.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
 
@@ -35,6 +39,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
   String result="";
+  List listCovid=[];
+  bool isLoading=false;
 
   void _incrementCounter() async {
     _counter++;
@@ -48,10 +54,12 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
+      body: isLoading?CircularProgressIndicator()
+          :Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            SizedBox(height: 10,),
             const Text(
               'Numero de veces escaneado',
             ),
@@ -65,6 +73,46 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               result,
             ),
+            const SizedBox(height: 20,),
+            InkWell(
+              onTap: tapBotonHttp,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple,
+                  borderRadius: BorderRadius.circular(16)
+                ),
+                child: const Text("COVID", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                  itemCount: listCovid.length,
+                  itemBuilder: (context, index){
+                    return Column(
+                      children: [
+                        ListTile(
+                          onTap: (){
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginView(result:listCovid[index].toString())));
+                          },
+                          title: Text("ID Caso: ${listCovid[index]["id_de_caso"]}"),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Departamento: ${listCovid[index]["departamento_nom"]}"),
+                              Text("Sexo: ${listCovid[index]["sexo"]}"),
+                              Text("Estado: ${listCovid[index]["estado"]}"),
+                            ],
+                          ),
+                          leading: Icon(Icons.bug_report),
+                          trailing: Icon(Icons.arrow_forward_ios),
+                        ),
+                        Divider()
+                      ],
+                    );
+                  }
+              ),
+            )
           ],
         ),
       ),
@@ -75,4 +123,22 @@ class _MyHomePageState extends State<MyHomePage> {
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
+
+  void tapBotonHttp() async {
+    print("click boton OK");
+    isLoading=true;
+    setState(() {});
+    String departamento = "13001";
+    String edad = "30";
+    var url = Uri.parse('https://www.datos.gov.co/resource/gt2j-8ykr.json?departamento=$departamento&edad=$edad');
+    http.Response response = await http.get(url);
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    if(response.statusCode == 200){
+      listCovid = jsonDecode(response.body);
+    }
+    isLoading=false;
+    setState(() {});
+  }
+
 }
